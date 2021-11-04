@@ -1,0 +1,26 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "pyprojectify"
+version = "0.1.0"
+description = "pyprojectify is a utility allowing python package authors/maintainers/packagers to painlessly migrate their package from setup.py to the new pyproject.toml."
+authors = ["Sekou Diao <diao.sekou.nlp@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+
+[tool.poetry.dev-dependencies]
+pip="^19.2.3"
+bump2version="^0.5.11"
+wheel="^0.33.6"
+watchdog="^0.9.0"
+flake8="^3.7.8"
+tox="^3.14.0"
+coverage="^4.5.4"
+Sphinx="^1.8.5"
+twine="^1.14.0"
+Click="^8.0.3"
+pytest="^6.2.4"
