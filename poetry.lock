@@ -511,7 +511,7 @@ test = ["pytest", "sqlalchemy", "whoosh", "sphinx"]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 
@@ -651,7 +651,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6"
-content-hash = "46cb50b3c335ff5279eb6c5b97b7c667d152e3d29fe02d30d1a801576ddaaefc"
+content-hash = "cfc2be55c2618a115ec5459c68cd02db0cecd9310f7ba258a3943718b2a6aae1"
 
 [metadata.files]
 alabaster = [
