@@ -2,6 +2,8 @@
 
 import os
 from pathlib import Path
+from configparser import ConfigParser
+import toml
 
 try:
     from utils import logger
@@ -51,6 +53,38 @@ class PyProject:
         pyproject = Path(path / "pyproject.toml")
         return pyproject.is_file()
 
+    @staticmethod
+    def _parse_config_file(config_file: Path):
+        """Parse config file."""
+        try:
+            if config_file.suffix == '.toml':
+                config = toml.load(config_file)
+            elif config_file.suffix in ('.ini', '.cfg'):
+                config = ConfigParser()
+                config.read(config_file)
+            elif config_file.suffix == '.in':
+                with open(config_file, 'r') as f:
+                    config = f.readlines()
+            else:
+                raise ValueError("Unknown config file type: {}".format(config_file.suffix))
+        except Exception as e:
+            logger.error("Failed to parse config file: {}".format(e))
+            raise e
+
+        return config
+
+    @staticmethod
+    def _parse_setup_py(file_path: Path):
+        """Parse setup.py."""
+        try:
+            with open(file_path, 'r') as f:
+                setup_py = f.readlines()
+        except Exception as e:
+            logger.error("Failed to parse setup.py: {}".format(e))
+            raise e
+
+        return setup_py
+
     def migrate(self):
         """Migrate setuptools project to pyproject.toml"""
         if self.package_path:
@@ -63,28 +97,23 @@ class PyProject:
             raise FileNotFoundError
 
         if self._has_pyproject(package_dir):
-            logger.info("pyproject.toml already exists in {}".format(package_dir))
+            logger.warning("pyproject.toml already exists in {}".format(package_dir))
             return
 
         # parse setup.py
-        setup_py = Path(package_dir / "setup.py")
-        setup_py_content = setup_py.read_text()
-        setup_py_lines = [line.strip() for line in setup_py_content.split("\n") if line]
-        print('ok')
+        setup_py = self._parse_setup_py(package_dir / "setup.py")
 
         # parse setup.cfg
         if self._has_setup_cfg(package_dir):
-            setup_cfg = Path(package_dir / "setup.cfg")
-            setup_cfg_content = setup_cfg.read_text()
-            setup_cfg_lines = [line.strip() for line in setup_cfg_content.split("\n") if line]
-            print('ok')
+            setup_cfg = self._parse_config_file(package_dir / "setup.cfg")
+        else:
+            setup_cfg = None
 
         # parse MANIFEST.in
         if self._has_manifest_in_(package_dir):
-            manifest = Path(package_dir / "MANIFEST.in")
-            manifest_content = manifest.read_text()
-            manifest_lines = [line.strip() for line in manifest_content.split("\n") if line]
-            print('ok')
+            manifest_in = self._parse_config_file(package_dir / "MANIFEST.in")
+        else:
+            manifest_in = None
 
         return
 
