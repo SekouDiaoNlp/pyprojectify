@@ -12,7 +12,7 @@ except ModuleNotFoundError or ImportError:
 class PyProject:
     """Main class."""
     def __init__(self, package_path=None):
-        self.package_path = package_path
+        self.package_path = Path(package_path)
 
         return
 
@@ -61,4 +61,32 @@ class PyProject:
         if not self._has_setup_py(package_dir):
             logger.error("No setup.py found in {}".format(package_dir))
             raise FileNotFoundError
+
+        if self._has_pyproject(package_dir):
+            logger.info("pyproject.toml already exists in {}".format(package_dir))
+            return
+
+        # parse setup.py
+        setup_py = Path(package_dir / "setup.py")
+        setup_py_content = setup_py.read_text()
+        setup_py_lines = [line.strip() for line in setup_py_content.split("\n") if line]
+        print('ok')
+
+        # parse setup.cfg
+        if self._has_setup_cfg(package_dir):
+            setup_cfg = Path(package_dir / "setup.cfg")
+            setup_cfg_content = setup_cfg.read_text()
+            setup_cfg_lines = [line.strip() for line in setup_cfg_content.split("\n") if line]
+            print('ok')
+
+        # parse MANIFEST.in
+        if self._has_manifest_in_(package_dir):
+            manifest = Path(package_dir / "MANIFEST.in")
+            manifest_content = manifest.read_text()
+            manifest_lines = [line.strip() for line in manifest_content.split("\n") if line]
+            print('ok')
+
+        return
+
+
 
