@@ -1,6 +1,7 @@
 """Main module."""
 
 import os
+import ast
 from collections import OrderedDict
 from pathlib import Path
 from configparser import ConfigParser
@@ -75,17 +76,44 @@ class PyProject:
 
         return config
 
-    @staticmethod
-    def _parse_setup_py(file_path: Path):
+    def _parse_setup_py(self, file_path: Path):
         """Parse setup.py."""
         try:
             with open(file_path, 'r') as f:
-                setup_py = f.readlines()
+                setup_py = f.read()
+                setup_py_ast = ast.parse(setup_py, mode='exec')
+                functions = [node for node in setup_py_ast.body if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)]
+                setup_function = [node for node in functions if node.value.func.id == 'setup'][0]
+                setup_function_args = [arg.value for arg in setup_function.value.args]
+                setup_function_kwargs = {arg.arg: self._pluck_value(arg.value) for arg in setup_function.value.keywords}
+                print('ok')
         except Exception as e:
             logger.error("Failed to parse setup.py: {}".format(e))
             raise e
 
-        return setup_py
+        return setup_function_kwargs
+
+    @staticmethod
+    def _pluck_value(node):
+        """Pluck constant."""
+        if isinstance(node, ast.Str):
+            return node.s
+        elif isinstance(node, ast.Num):
+            return node.n
+        elif isinstance(node, ast.Name):
+            return node.id
+        elif isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.Tuple):
+            return tuple(PyProject._pluck_value(n) for n in node.elts)
+        elif isinstance(node, ast.List):
+            return [PyProject._pluck_value(n) for n in node.elts]
+        elif isinstance(node, ast.Dict):
+            return {PyProject._pluck_value(k): PyProject._pluck_value(n) for k, n in zip(node.keys, node.values)}
+        else:
+            logger.warning("Unknown value type: {}".format(type(node)))
+            return None    # TODO: Better handling of unknown types
+            # raise ValueError("Unknown value type: {}".format(type(node)))
 
     def _build_toml(self, setup_py, setup_cfg, manifest_in):
         """Build pyproject.toml."""
@@ -94,36 +122,10 @@ class PyProject:
         pyproject['build-backend'] = 'setuptools.build_meta'
         pyproject['requires'] = ['setuptools', 'wheel']
         pyproject['metadata'] = OrderedDict()
-        pyproject['metadata']['name'] = 'name'
-        pyproject['metadata']['version'] = 'version'
-        pyproject['metadata']['author'] = 'author'
-        pyproject['metadata']['author_email'] = 'author_email'
-        pyproject['metadata']['url'] = 'url'
-        pyproject['metadata']['description'] = 'description'
-        pyproject['metadata']['long_description'] = 'long_description'
-        pyproject['metadata']['long_description_content_type'] = 'text/markdown'
-        pyproject['metadata']['classifiers'] = ['Programming Language :: Python :: 3.6', ]
-        pyproject['metadata']['keywords'] = []
-        pyproject['metadata']['license'] = 'license'
-        pyproject['metadata']['packages'] = []
-        pyproject['metadata']['package_dir'] = {}
-        pyproject['metadata']['package_data'] = {}
-        pyproject['metadata']['install_requires'] = []
-        pyproject['metadata']['extras_require'] = {}
-        pyproject['metadata']['python_requires'] = '>=3.6'
-        pyproject['metadata']['zip_safe'] = False
-        pyproject['metadata']['entry_points'] = {}
-        pyproject['metadata']['test_suite'] = 'tests'
-        pyproject['metadata']['tests_require'] = []
-        pyproject['metadata']['setup_requires'] = []
-        pyproject['metadata']['use_scm_version'] = {}
-        pyproject['metadata']['use_scm_version']['write_to'] = '{}/version.py'.format(pyproject['metadata']['name'])
-        pyproject['metadata']['use_scm_version']['write_to_template'] = '{version}'
-        pyproject['metadata']['use_scm_version']['relative_to'] = '{}'.format(pyproject['metadata']['name'])
-        pyproject['metadata']['use_scm_version']['local_scheme'] = 'no-local-version'
-        pyproject['metadata']['use_scm_version']['fallback_version'] = '0.0.0'
-        pyproject['metadata']['use_scm_version']['version_scheme'] = 'guess-next-dev'
-        pyproject['metadata']['use_scm_version']['local_scheme'] = 'dirty-tag'
+        for key, value in setup_py.items():
+            if key in ('name', 'version', 'author', 'author_email', 'maintainer', 'maintainer_email', 'url', 'license', 'description', 'long_description', 'keywords', 'classifiers'):
+                pyproject['metadata'][key] = value
+
 
         if setup_cfg:
             # add setup.cfg
@@ -161,7 +163,7 @@ class PyProject:
 
         if self._has_pyproject(package_dir):
             logger.warning("pyproject.toml already exists in {}".format(package_dir))
-            return
+            # return
 
         # parse setup.py
         setup_py = self._parse_setup_py(package_dir / "setup.py")
