@@ -7,7 +7,7 @@ from pathlib import Path
 from configparser import ConfigParser
 import toml
 
-KEYWORDS_CLASSIFIERS_ = ('name', 'version', 'author', 'author_email', 'maintainer', 'maintainer_email', 'url', 'license',
+PROJECT_METADATA_ = ('name', 'version', 'author', 'author_email', 'maintainer', 'maintainer_email', 'url', 'license',
                 'description', 'long_description', 'keywords', 'classifiers')
 
 try:
@@ -127,10 +127,11 @@ class PyProject:
         pyproject['build-system'] = OrderedDict()
         pyproject['build-system']['build-backend'] = 'setuptools.build_meta'
         pyproject['build-system']['requires'] = ['setuptools', 'wheel']
-        pyproject['metadata'] = OrderedDict()
+
+        pyproject['project'] = OrderedDict()
         for key, value in setup_py.items():
-            if key in KEYWORDS_CLASSIFIERS_:
-                pyproject['metadata'][key] = value
+            if key in PROJECT_METADATA_:
+                pyproject['project'][key] = value
 
         pyproject['script'] = OrderedDict()
         for elmt in setup_py['entry_points']['console_scripts']:
@@ -140,14 +141,14 @@ class PyProject:
         if setup_cfg:
             # update pyproject with metadata from setup.cfg
             for key, value in setup_cfg.items():
-                if key in KEYWORDS_CLASSIFIERS_:
-                    pyproject['metadata'][key] = value
+                if key in PROJECT_METADATA_:
+                    pyproject['project'][key] = value
 
         if manifest_in:
             # update pyproject metadata with metadata from MANIFEST.in
-            pyproject['metadata']['packages'] = []    # TODO: Implement packages detection
-            pyproject['metadata']['include'] = [line[8:] for line in manifest_in if line.startswith('include ')]
-            pyproject['metadata']['exclude'] = [line[8:] for line in manifest_in if line.startswith('exclude ')]
+            pyproject['project']['packages'] = []    # TODO: Implement packages detection
+            pyproject['project']['include'] = [line[8:] for line in manifest_in if line.startswith('include ')]
+            pyproject['project']['exclude'] = [line[8:] for line in manifest_in if line.startswith('exclude ')]
 
         return pyproject
 
