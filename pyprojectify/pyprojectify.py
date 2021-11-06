@@ -82,7 +82,8 @@ class PyProject:
             with open(file_path, 'r') as f:
                 setup_py = f.read()
                 setup_py_ast = ast.parse(setup_py, mode='exec')
-                functions = [node for node in setup_py_ast.body if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)]
+                functions = [node for node in setup_py_ast.body if
+                             isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)]
                 setup_function = [node for node in functions if node.value.func.id == 'setup'][0]
                 setup_function_args = [arg.value for arg in setup_function.value.args]
                 setup_function_kwargs = {arg.arg: self._pluck_value(arg.value) for arg in setup_function.value.keywords}
@@ -112,10 +113,11 @@ class PyProject:
             return {PyProject._pluck_value(k): PyProject._pluck_value(n) for k, n in zip(node.keys, node.values)}
         else:
             logger.warning("Unknown value type: {}".format(type(node)))
-            return None    # TODO: Better handling of unknown types
+            return None  # TODO: Better handling of unknown types
             # raise ValueError("Unknown value type: {}".format(type(node)))
 
-    def _build_toml(self, setup_py, setup_cfg, manifest_in):
+    @staticmethod
+    def _build_toml(setup_py, setup_cfg, manifest_in):
         """Build pyproject.toml."""
         pyproject = OrderedDict()
         pyproject['tool'] = 'setuptools'
@@ -123,9 +125,9 @@ class PyProject:
         pyproject['requires'] = ['setuptools', 'wheel']
         pyproject['metadata'] = OrderedDict()
         for key, value in setup_py.items():
-            if key in ('name', 'version', 'author', 'author_email', 'maintainer', 'maintainer_email', 'url', 'license', 'description', 'long_description', 'keywords', 'classifiers'):
+            if key in ('name', 'version', 'author', 'author_email', 'maintainer', 'maintainer_email', 'url', 'license',
+                       'description', 'long_description', 'keywords', 'classifiers'):
                 pyproject['metadata'][key] = value
-
 
         if setup_cfg:
             # add setup.cfg
