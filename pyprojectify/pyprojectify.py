@@ -7,6 +7,9 @@ from pathlib import Path
 from configparser import ConfigParser
 import toml
 
+KEYWORDS_CLASSIFIERS_ = ('name', 'version', 'author', 'author_email', 'maintainer', 'maintainer_email', 'url', 'license',
+                'description', 'long_description', 'keywords', 'classifiers')
+
 try:
     from utils import logger
 except ModuleNotFoundError or ImportError:
@@ -67,7 +70,8 @@ class PyProject:
                 config.read(config_file)
             elif config_file.suffix == '.in':
                 with open(config_file, 'r') as f:
-                    config = f.readlines()
+                    config = [line.rstrip() for line in f.readlines() if not line.startswith('#')]
+                    config = [line for line in config if line]
             else:
                 raise ValueError("Unknown config file type: {}".format(config_file.suffix))
         except Exception as e:
@@ -120,24 +124,30 @@ class PyProject:
     def _build_toml(setup_py, setup_cfg, manifest_in):
         """Build pyproject.toml."""
         pyproject = OrderedDict()
-        pyproject['tool'] = 'setuptools'
-        pyproject['build-backend'] = 'setuptools.build_meta'
-        pyproject['requires'] = ['setuptools', 'wheel']
+        pyproject['build-system'] = OrderedDict()
+        pyproject['build-system']['build-backend'] = 'setuptools.build_meta'
+        pyproject['build-system']['requires'] = ['setuptools', 'wheel']
         pyproject['metadata'] = OrderedDict()
         for key, value in setup_py.items():
-            if key in ('name', 'version', 'author', 'author_email', 'maintainer', 'maintainer_email', 'url', 'license',
-                       'description', 'long_description', 'keywords', 'classifiers'):
+            if key in KEYWORDS_CLASSIFIERS_:
                 pyproject['metadata'][key] = value
 
+        pyproject['script'] = OrderedDict()
+        for elmt in setup_py['entry_points']['console_scripts']:
+            script_name = elmt[:elmt.index('=')]
+            pyproject['script'][script_name] = elmt[elmt.index('=') + 1:]
+
         if setup_cfg:
-            # add setup.cfg
-            pyproject['metadata']['setup_requires'] = ['setuptools_scm']
+            # update pyproject with metadata from setup.cfg
+            for key, value in setup_cfg.items():
+                if key in KEYWORDS_CLASSIFIERS_:
+                    pyproject['metadata'][key] = value
 
         if manifest_in:
-            # add MANIFEST.in
-            pyproject['metadata']['packages'] = ['{}'.format(pyproject['metadata']['name'])]
-            pyproject['metadata']['package_dir'] = {'{}'.format(pyproject['metadata']['name']): ''}
-            pyproject['metadata']['package_data'] = {'{}'.format(pyproject['metadata']['name']): ['*']}
+            # update pyproject metadata with metadata from MANIFEST.in
+            pyproject['metadata']['packages'] = []    # TODO: Implement packages detection
+            pyproject['metadata']['include'] = [line[8:] for line in manifest_in if line.startswith('include ')]
+            pyproject['metadata']['exclude'] = [line[8:] for line in manifest_in if line.startswith('exclude ')]
 
         return pyproject
 
@@ -182,6 +192,7 @@ class PyProject:
         else:
             manifest_in = None
 
+        # build pyproject dict
         pyproject = self._build_toml(setup_py, setup_cfg, manifest_in)
 
         # save pyproject.toml
