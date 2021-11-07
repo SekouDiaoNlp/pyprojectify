@@ -2,4 +2,4 @@
 
 __author__ = """Sekou Diao"""
 __email__ = 'diao.sekou.nlp@gmail.com'
-__version__ = '0.1.0'
+__version__ = '0.2.0'
