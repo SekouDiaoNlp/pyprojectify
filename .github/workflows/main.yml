@@ -56,7 +56,7 @@ jobs:
             -   name: Run PyTest with coverage
                 run: |
                     py.test --cov=./pyprojectify/
-#            -   name: Upload coverage artifacts to codecov
-#                run: codecov --token=370386ee-28d7-441f-b4eb-7f63f8c5c3e9
-#                if: ${{ matrix.python-version != '3.10' }} # codecov is not yet compatible with python 3.10.0
+            -   name: Upload coverage artifacts to codecov
+                run: codecov --token=secrets.CODECOV_API_TOKEN
+                if: ${{ matrix.python-version != '3.10' }} # codecov is not yet compatible with python 3.10.0
 
