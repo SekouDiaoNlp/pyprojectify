@@ -26,8 +26,8 @@ Sphinx = "*"
 twine = "*"
 Click="^8.0.3"
 pytest = "*"
-bandit = "*"
-mypy = "*"
+bandit = "^1.7.0"
+mypy = "^0.910"
 
 [tool.bandit]
 skips = ["B311", ]
