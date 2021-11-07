@@ -6,9 +6,10 @@ from collections import OrderedDict
 from pathlib import Path
 from configparser import ConfigParser
 import toml
+import re
 
-PROJECT_METADATA_ = ('name', 'version', 'author', 'author_email', 'maintainer', 'maintainer_email', 'url', 'license',
-                'description', 'long_description', 'keywords', 'classifiers')
+PROJECT_METADATA_ = ('name', 'version', 'author', 'author_email', 'maintainer', 'maintainer_email',
+                     'url', 'license', 'description', 'long_description', 'keywords', 'classifiers')
 
 try:
     from utils import logger
@@ -81,15 +82,18 @@ class PyProject:
         return config
 
     def _parse_setup_py(self, file_path: Path):
-        """Parse setup.py."""
+        """Parse setup.py into it's Abstract Syntax Tree representation
+        and extracts all keyword arguments from the setup() function.
+        """
         try:
             with open(file_path, 'r') as f:
                 setup_py = f.read()
                 setup_py_ast = ast.parse(setup_py, mode='exec')
+                assignments = [node for node in setup_py_ast.body if isinstance(node, ast.Assign)]
+                self._assignments_dict = {assignment.targets[0].id: self._pluck_value(assignment.value) for assignment in assignments}
                 functions = [node for node in setup_py_ast.body if
                              isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)]
                 setup_function = [node for node in functions if node.value.func.id == 'setup'][0]
-                setup_function_args = [arg.value for arg in setup_function.value.args]
                 setup_function_kwargs = {arg.arg: self._pluck_value(arg.value) for arg in setup_function.value.keywords}
                 print('ok')
         except Exception as e:
@@ -98,23 +102,25 @@ class PyProject:
 
         return setup_function_kwargs
 
-    @staticmethod
-    def _pluck_value(node):
-        """Pluck constant."""
+    def _pluck_value(self, node):
+        """Pluck value from ast."""
         if isinstance(node, ast.Str):
             return node.s
         elif isinstance(node, ast.Num):
             return node.n
         elif isinstance(node, ast.Name):
-            return node.id
+            if node.id in self._assignments_dict:
+                return self._assignments_dict[node.id]
+            else:
+                return node.id
         elif isinstance(node, ast.Constant):
             return node.value
         elif isinstance(node, ast.Tuple):
-            return tuple(PyProject._pluck_value(n) for n in node.elts)
+            return tuple(self._pluck_value(n) for n in node.elts)
         elif isinstance(node, ast.List):
-            return [PyProject._pluck_value(n) for n in node.elts]
+            return [self._pluck_value(n) for n in node.elts]
         elif isinstance(node, ast.Dict):
-            return {PyProject._pluck_value(k): PyProject._pluck_value(n) for k, n in zip(node.keys, node.values)}
+            return {self._pluck_value(k): self._pluck_value(n) for k, n in zip(node.keys, node.values)}
         else:
             logger.warning("Unknown value type: {}".format(type(node)))
             return None  # TODO: Better handling of unknown types
@@ -127,12 +133,31 @@ class PyProject:
         pyproject['build-system'] = OrderedDict()
         pyproject['build-system']['build-backend'] = 'setuptools.build_meta'
         pyproject['build-system']['requires'] = ['setuptools', 'wheel']
+        pyproject['build-system']['requires'].extend(setup_py.get('setup_requires', []))
 
+        # populate 'project' key with setup.py metadata
         pyproject['project'] = OrderedDict()
         for key, value in setup_py.items():
             if key in PROJECT_METADATA_:
-                pyproject['project'][key] = value
+                if value is not None:
+                    pyproject['project'][key] = value
+                else:
+                    pyproject['project'][key] = ""
 
+        # populate requirements key with setup.py metadata
+        pyproject['dependencies'] = setup_py.get('install_requires', [])
+        for elmt in setup_py.get('extras_require', {}).values():
+            pyproject['dependencies'].extend(elmt)
+
+        # format dependencies
+        deps = OrderedDict()
+        for i, dep in enumerate(pyproject['dependencies']):
+            # split dep on arithmetic comparison operators
+            split_dep = re.split(r'([<>=!~]+|\s)', dep)
+            deps[split_dep[0]] = ''.join(split_dep[1:])
+        pyproject['dependencies'] = deps
+
+        # add project entry-points
         pyproject['script'] = OrderedDict()
         for elmt in setup_py['entry_points']['console_scripts']:
             script_name = elmt[:elmt.index('=')]
@@ -146,7 +171,7 @@ class PyProject:
 
         if manifest_in:
             # update pyproject metadata with metadata from MANIFEST.in
-            pyproject['project']['packages'] = []    # TODO: Implement packages detection
+            pyproject['project']['packages'] = []  # TODO: Implement packages detection
             pyproject['project']['include'] = [line[8:] for line in manifest_in if line.startswith('include ')]
             pyproject['project']['exclude'] = [line[8:] for line in manifest_in if line.startswith('exclude ')]
 
@@ -176,7 +201,14 @@ class PyProject:
 
         if self._has_pyproject(package_dir):
             logger.warning("pyproject.toml already exists in {}".format(package_dir))
-            # return
+            # make a backup of pyproject.toml with pathlib
+            pyproject_backup = Path(package_dir) / 'pyproject.toml.bak'
+            if pyproject_backup.exists():
+                pyproject_backup.unlink()
+            old_pyproject = Path(package_dir) / 'pyproject.toml'
+            old_pyproject.rename(pyproject_backup)
+
+            # return    # TODO: Prompt user if he wants the file to be over-written
 
         # parse setup.py
         setup_py = self._parse_setup_py(package_dir / "setup.py")
@@ -202,6 +234,8 @@ class PyProject:
         # validate pyproject.toml
         try:
             generated_pyproject = toml.load(package_dir / "pyproject.toml")
+            if not generated_pyproject == dict(pyproject):
+                raise RuntimeError
         except Exception as e:
             logger.error("Failed to parse generated pyproject.toml: {}".format(e))
             raise e
