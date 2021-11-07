@@ -1,12 +1,14 @@
 """Main module."""
 
-import os
 import ast
 from collections import OrderedDict
 from pathlib import Path
 from configparser import ConfigParser
 import toml
 import re
+
+# Typing related imports
+from typing import DefaultDict, Dict, List, Optional, Tuple, Union, Generator, Any, Iterator
 
 PROJECT_METADATA_ = ('name', 'version', 'author', 'author_email', 'maintainer', 'maintainer_email',
                      'url', 'license', 'description', 'long_description', 'keywords', 'classifiers')
@@ -147,7 +149,12 @@ class PyProject:
         # populate requirements key with setup.py metadata
         pyproject['dependencies'] = setup_py.get('install_requires', [])
         for elmt in setup_py.get('extras_require', {}).values():
-            pyproject['dependencies'].extend(elmt)
+            pyproject['dependencies'].append(elmt)
+
+        # add python_requires if it's not already in dependencies
+        if 'python_requires' in setup_py:
+            if setup_py['python_requires'] not in pyproject['dependencies']:
+                pyproject['dependencies'].append('python' + setup_py['python_requires'])
 
         # format dependencies
         deps = OrderedDict()
