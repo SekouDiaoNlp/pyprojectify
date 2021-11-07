@@ -26,3 +26,20 @@ Sphinx = "*"
 twine = "*"
 Click="^8.0.3"
 pytest = "*"
+
+[tool.bandit]
+skips = ["B311", ]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
+
+[tool.mypy]
+warn_unused_configs = true
+strict = true
+ignore_missing_imports = true
+show_error_codes = true
+files = "pylexique/"
