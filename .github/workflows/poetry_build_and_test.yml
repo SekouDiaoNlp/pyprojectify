@@ -52,6 +52,7 @@ jobs:
             -   name: Run Type Checker
                 run: |
                     poetry run pip install types-setuptools
+                    poetry run pip install types-toml
                     poetry run mypy --strict --ignore-missing-imports --show-error-codes pyprojectify/
             -   name: Run Pytest
                 run: poetry run pytest --cov=./pyprojectify/

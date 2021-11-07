@@ -44,4 +44,4 @@ warn_unused_configs = true
 strict = true
 ignore_missing_imports = true
 show_error_codes = true
-files = "pylexique/"
+files = "pyprojectify/"
