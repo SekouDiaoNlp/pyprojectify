@@ -19,7 +19,7 @@ setup(
     author_email='diao.sekou.nlp@gmail.com',
     python_requires='>=3.6',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
@@ -27,6 +27,8 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
     description="pyprojectify is a utility allowing python package authors/maintainers/packagers to painlessly migrate their package from setup.py to the new pyproject.toml.",
     entry_points={
