@@ -2,9 +2,12 @@
 import sys
 import click
 
+# Typing related imports
+from typing import DefaultDict, Dict, List, Optional, Tuple, Union, Generator, Any, Iterator, MutableMapping
+
 
 @click.command()
-def main(args=None):
+def main(args: Optional[str] = None) -> int:
     """Console script for pyprojectify."""
     click.echo("Replace this message by putting your code into "
                "pyprojectify.cli.main")

@@ -8,10 +8,10 @@ import toml
 import re
 
 # Typing related imports
-from typing import DefaultDict, Dict, List, Optional, Tuple, Union, Generator, Any, Iterator
+from typing import DefaultDict, Dict, List, Optional, Tuple, Union, Generator, Any, Iterator, MutableMapping
 
-PROJECT_METADATA_ = ('name', 'version', 'author', 'author_email', 'maintainer', 'maintainer_email',
-                     'url', 'license', 'description', 'long_description', 'keywords', 'classifiers')
+PROJECT_METADATA_: Tuple[str, ...] = ('name', 'version', 'author', 'author_email', 'maintainer', 'maintainer_email',
+                                      'url', 'license', 'description', 'long_description', 'keywords', 'classifiers')
 
 try:
     from utils import logger
@@ -22,48 +22,49 @@ except ModuleNotFoundError or ImportError:
 class PyProject:
     """Main class."""
 
-    def __init__(self, package_path=None):
-        self.package_path = Path(package_path)
+    def __init__(self, package_path: Optional[Union[str, Path]] = None) -> None:
+        if package_path:
+            self.package_path = Path(package_path)
 
         return
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "PyProject"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "PyProject"
 
     @staticmethod
-    def _get_current_working_directory():
+    def _get_current_working_directory() -> Path:
         """Get current working directory."""
         return Path.cwd()
 
     @staticmethod
-    def _has_setup_py(path: Path):
+    def _has_setup_py(path: Path) -> bool:
         """Check if setup.py exists."""
         setup_py = Path(path / "setup.py")
         return setup_py.is_file()
 
     @staticmethod
-    def _has_setup_cfg(path: Path):
+    def _has_setup_cfg(path: Path) -> bool:
         """Check if setup.cfg exists."""
         setup_cfg = Path(path / "setup.cfg")
         return setup_cfg.is_file()
 
     @staticmethod
-    def _has_manifest_in_(path: Path):
+    def _has_manifest_in_(path: Path) -> bool:
         """Check if MANIFEST.in exists."""
         manifest = Path(path / "MANIFEST.in")
         return manifest.is_file()
 
     @staticmethod
-    def _has_pyproject(path: Path):
+    def _has_pyproject(path: Path) -> bool:
         """Check if pyproject.toml exists."""
         pyproject = Path(path / "pyproject.toml")
         return pyproject.is_file()
 
     @staticmethod
-    def _parse_config_file(config_file: Path):
+    def _parse_config_file(config_file: Path) -> Union[List[str], Optional[MutableMapping[str, Any]]]:
         """Parse config file."""
         try:
             if config_file.suffix == '.toml':
@@ -73,8 +74,8 @@ class PyProject:
                 config.read(config_file)
             elif config_file.suffix == '.in':
                 with open(config_file, 'r') as f:
-                    config = [line.rstrip() for line in f.readlines() if not line.startswith('#')]
-                    config = [line for line in config if line]
+                    config = [line.rstrip() for line in f.readlines() if not line.startswith('#')]  # type: ignore[assignment]
+                    config = [line for line in config if line]  # type: ignore[assignment]
             else:
                 raise ValueError("Unknown config file type: {}".format(config_file.suffix))
         except Exception as e:
@@ -83,7 +84,7 @@ class PyProject:
 
         return config
 
-    def _parse_setup_py(self, file_path: Path):
+    def _parse_setup_py(self, file_path: Path) -> Dict[str, Any]:
         """Parse setup.py into it's Abstract Syntax Tree representation
         and extracts all keyword arguments from the setup() function.
         """
@@ -92,11 +93,11 @@ class PyProject:
                 setup_py = f.read()
                 setup_py_ast = ast.parse(setup_py, mode='exec')
                 assignments = [node for node in setup_py_ast.body if isinstance(node, ast.Assign)]
-                self._assignments_dict = {assignment.targets[0].id: self._pluck_value(assignment.value) for assignment in assignments}
+                self._assignments_dict = {assignment.targets[0].id: self._pluck_value(assignment.value) for assignment in assignments}  # type: ignore[attr-defined]
                 functions = [node for node in setup_py_ast.body if
                              isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)]
-                setup_function = [node for node in functions if node.value.func.id == 'setup'][0]
-                setup_function_kwargs = {arg.arg: self._pluck_value(arg.value) for arg in setup_function.value.keywords}
+                setup_function = [node for node in functions if node.value.func.id == 'setup'][0]   # type: ignore[attr-defined]
+                setup_function_kwargs = {arg.arg: self._pluck_value(arg.value) for arg in setup_function.value.keywords}    # type: ignore[attr-defined]
                 print('ok')
         except Exception as e:
             logger.error("Failed to parse setup.py: {}".format(e))
@@ -104,7 +105,7 @@ class PyProject:
 
         return setup_function_kwargs
 
-    def _pluck_value(self, node):
+    def _pluck_value(self, node: Optional[Union[ast.expr, ast.Constant]]) -> Any:
         """Pluck value from ast."""
         if isinstance(node, ast.Str):
             return node.s
@@ -129,9 +130,9 @@ class PyProject:
             # raise ValueError("Unknown value type: {}".format(type(node)))
 
     @staticmethod
-    def _build_toml(setup_py, setup_cfg, manifest_in):
+    def _build_toml(setup_py: Dict[str, Any], setup_cfg: Optional[MutableMapping[str, Any]], manifest_in: Optional[List[str]]) -> Dict[str, Any]:
         """Build pyproject.toml."""
-        pyproject = OrderedDict()
+        pyproject: Dict[str, Any] = OrderedDict()
         pyproject['build-system'] = OrderedDict()
         pyproject['build-system']['build-backend'] = 'setuptools.build_meta'
         pyproject['build-system']['requires'] = ['setuptools', 'wheel']
@@ -185,7 +186,7 @@ class PyProject:
         return pyproject
 
     @staticmethod
-    def _save_toml(pyproject, file_path):
+    def _save_toml(pyproject: Dict[str, Any], file_path: Path) -> None:
         """Save pyproject.toml."""
         try:
             with open(file_path, 'w') as f:
@@ -195,7 +196,7 @@ class PyProject:
             raise e
         return
 
-    def migrate(self):
+    def migrate(self) -> None:
         """Migrate setuptools project to pyproject.toml"""
         if self.package_path:
             package_dir = self.package_path
@@ -233,7 +234,7 @@ class PyProject:
             manifest_in = None
 
         # build pyproject dict
-        pyproject = self._build_toml(setup_py, setup_cfg, manifest_in)
+        pyproject = self._build_toml(setup_py, setup_cfg, manifest_in)  # type: ignore[arg-type]
 
         # save pyproject.toml
         self._save_toml(pyproject, package_dir / "pyproject.toml")
