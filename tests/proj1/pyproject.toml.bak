@@ -1,0 +1,24 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [ "setuptools", "wheel",]
+
+[project]
+author = "Sekou Diao"
+author_email = "diao.sekou.nlp@gmail.com"
+classifiers = [ "Development Status :: 2 - Pre-Alpha", "Intended Audience :: Developers", "License :: OSI Approved :: MIT License", "Natural Language :: English", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3.6", "Programming Language :: Python :: 3.7", "Programming Language :: Python :: 3.8",]
+description = "pyprojectify is a utility allowing python package authors/maintainers/packagers to painlessly migrate their package from setup.py to the new pyproject.toml."
+license = "MIT license"
+long_description = ""
+keywords = "pyprojectify"
+name = "pyprojectify"
+url = "https://github.com/SekouDiaoNlp/pyprojectify"
+version = "0.1.0"
+packages = []
+include = [ "AUTHORS.rst", "CONTRIBUTING.rst", "HISTORY.rst", "LICENSE", "README.rst", "requirements.txt", "requirements_dev.txt",]
+exclude = []
+
+[dependencies]
+Click = ">=7.0"
+
+[script]
+pyprojectify = "pyprojectify.cli:main"
