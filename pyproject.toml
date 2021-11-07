@@ -27,7 +27,7 @@ twine = "*"
 Click="^8.0.3"
 pytest = "*"
 bandit = "^1.7.0"
-mypy = "^0.910"
+mypy = "^0.812"
 
 [tool.bandit]
 skips = ["B311", ]
