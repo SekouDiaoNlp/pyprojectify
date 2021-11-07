@@ -3,7 +3,7 @@
 """Tests for `pyprojectify` package."""
 
 import pytest
-
+from pathlib import Path
 from click.testing import CliRunner
 
 from pyprojectify import pyprojectify
@@ -22,7 +22,7 @@ def response():
 
 def test_content(response):
     """."""
-    project = pyprojectify.PyProject('proj1/')
+    project = pyprojectify.PyProject(Path(__file__).parent /'proj1')
     project.migrate()
     print('ok')
 
