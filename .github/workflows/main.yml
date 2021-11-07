@@ -48,7 +48,10 @@ jobs:
             -   name: Run bandit
                 run: bandit -r pyprojectify/ -c .bandit.yml
             -   name: Run Typechecker
-                run:  mypy --strict --ignore-missing-imports --show-error-codes pyprojectify/
+                run:  |
+                    python -m pip install types-setuptools
+                    python -m pip install types-toml
+                    mypy --strict --ignore-missing-imports --show-error-codes pyprojectify/
             -   name: Run PyTest with coverage
                 run: |
                     py.test --cov=./pyprojectify/
