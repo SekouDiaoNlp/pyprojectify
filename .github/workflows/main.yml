@@ -32,7 +32,7 @@ jobs:
                     key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/requirements_dev.txt') }}
             -   name: Install dependencies
                 run: |
-                    python -m pip install wheel pytest pytest-cov codecov pandas pyxlsb types-setuptools --user
+                    python -m pip install wheel pytest pytest-cov codecov pandas pyxlsb types-setuptools
                     pip install -r requirements_dev.txt --user
             -   name: Build wheel using pip
                 run: pip wheel -w DEST_DIR .
