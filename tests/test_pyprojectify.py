@@ -3,7 +3,7 @@
 """Tests for `pyprojectify` package."""
 
 import pytest
-
+from pathlib import Path
 from click.testing import CliRunner
 
 from pyprojectify import pyprojectify
@@ -21,9 +21,10 @@ def response():
 
 
 def test_content(response):
-    """Sample pytest test function with the pytest fixture as an argument."""
-    # from bs4 import BeautifulSoup
-    # assert 'GitHub' in BeautifulSoup(response.content).title.string
+    """."""
+    project = pyprojectify.PyProject(Path(__file__).parent /'proj1')
+    project.migrate()
+    print('ok')
 
 
 def test_command_line_interface():
