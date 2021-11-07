@@ -12,6 +12,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "^3.6"
 toml = "^0.10.2"
+Click = "^8.0.3"
 
 [tool.poetry.dev-dependencies]
 pip = "*"
