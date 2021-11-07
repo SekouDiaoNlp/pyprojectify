@@ -19,6 +19,7 @@ exclude = []
 
 [dependencies]
 Click = ">=7.0"
+python = ">=3.6"
 
 [script]
 pyprojectify = "pyprojectify.cli:main"
