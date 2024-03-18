@@ -8,7 +8,7 @@ Sphinx
 twine==3.5.0
 Click==8.0.3
 pytest==6.2.4
-black==21.7b0
+black==24.3.0
 bandit
 mypy
 pytest-cov
